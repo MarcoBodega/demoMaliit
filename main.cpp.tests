@@ -1,0 +1,282 @@
+#include <QGuiApplication>
+#include <QQmlApplicationEngine>
+#include <QtQuick/QQuickView>
+#include <QQmlEngine>
+#include <QQmlContext>
+
+#include <QProcessEnvironment>
+#include <QDebug>
+
+/*
+#include <mimpluginmanager.h>
+#include <minputcontextconnection.h>
+#include <mimserver.h>
+#include <connectionfactory.h>
+#include <unknownplatform.h>
+#include <maliitsettingsmanager.h>
+*/
+
+#include <qpa/qplatforminputcontextfactory_p.h>
+#include <qpa/qplatformintegration.h>
+#include <qpa/qplatforminputcontext.h>
+#include <private/qguiapplication_p.h>
+
+
+/*
+ * ENVIRONMENT
+ *
+ * #QT_QPA_EGLFS_DEBUG = qt.qpa.egldeviceintegration
+ * #QT_QPA_EGLFS_DEBUG = qt.qpa.input
+ *
+ * QT_DEBUG_PLUGINS = 1
+ * MALIIT_DEBUG = 1
+ *
+ * QT_PLUGIN_PATH or QCoreApplication::setLibraryPaths
+ *
+ * QT_IM_MODULE = maliit
+ *
+ *
+ * */
+
+
+/*
+ * LOG
+ *
+   Trying to load input module "maliit"
+    QInputMethod im is =  QInputMethod(0x15b2870)
+    Creating Maliit input context
+    QPlatformInputContext ic is =  MInputContext(0x15b9250)
+ *
+ */
+
+
+
+/*void pluginSettingsReceived(const QList<QSharedPointer<Maliit::PluginSettings> > &settings)
+{
+	foreach (const QSharedPointer<Maliit::PluginSettings> &setting, settings)
+	{
+		if (setting->pluginName() == "server")
+			maliitFrameworkSettings(setting);
+		else if (setting->pluginName() == "libmaliit-keyboard-plugin.so")
+			maliitKeyboardSettings(setting);
+	}
+}*/
+
+
+int main(int argc, char *argv[])
+{
+	QGuiApplication app(argc, argv);
+	//QQmlApplicationEngine engine;
+	QQuickView viewer;
+
+	// set paths here or in QT_PLUGIN_PATH
+	QCoreApplication::setLibraryPaths(QStringList() << "/usr/lib/x86_64-linux-gnu/qt5/plugins/"
+							  <<"/usr/local/lib/qt5/plugins/");
+
+	QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+	if (env.contains("QT_IM_MODULE"))
+	{
+		// INPUT METHOD PART
+		QInputMethod *im = QGuiApplication::inputMethod();
+		if(!im) {
+			qDebug() << "unable to get QInputMethod";
+			exit(0);
+		}
+		qDebug() << "QInputMethod im is = "<<im;
+
+		//INPUT CONTEXT PART
+		QString module = env.value("QT_IM_MODULE"); // should me "maliit"
+		qDebug() << "Trying to load input module" << module;
+		QPlatformInputContext *ic = QPlatformInputContextFactory::create(module); // create(); // depends from QT_IM_MODULE!!
+		if(!ic) {
+			qDebug() << "unable to get QPlatformInputContext";
+			exit(0);
+		}
+		qDebug() << "QPlatformInputContext ic is = "<< ic;
+		ic->showInputPanel();
+		//engine.load(QUrl(QStringLiteral("qrc:/main.qml")));
+		viewer.setSource(QUrl(QStringLiteral("qrc:/main.qml")));
+		viewer.show();
+		return app.exec();
+	}
+}
+
+/*
+int main(int argc, char *argv[])
+{
+	QGuiApplication app(argc, argv);
+	QQmlApplicationEngine engine;
+
+	// set paths here or in QT_PLUGIN_PATH
+	QCoreApplication::setLibraryPaths(QStringList() << "/usr/lib/x86_64-linux-gnu/qt5/plugins/"
+							  <<"/usr/local/lib/qt5/plugins/");
+
+	QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+	if (env.contains("QT_IM_MODULE"))
+	{
+		//MImServer::configureSettings(MImServer::TemporarySettings);
+		//QSharedPointer<MInputContextConnection> icConnection;
+		//QSharedPointer<Maliit::AbstractPlatform> platform(new Maliit::UnknownPlatform);
+		//MIMPluginManager pm(icConnection, platform);
+		//qDebug() << "MIMPluginManager activePluginsNames() = " << pm.activePluginsNames();
+		////qDebug() << "MIMPluginManager loadedPluginsNames() = " << pm.loadedPluginsNames();
+
+
+		// INPUT METHOD PART
+		QInputMethod *im = QGuiApplication::inputMethod();
+		//QPlatformInputMethodFactory::
+		if(!im) {
+			qDebug() << "unable to get QInputMethod";
+			exit(0);
+		}
+		qDebug() << "QInputMethod im is = "<<im;
+
+		//INPUT CONTEXT PART
+		QString module = env.value("QT_IM_MODULE"); // should me "maliit"
+		qDebug() << "Trying to load input module" << module;
+		QPlatformInputContext *ic = QPlatformInputContextFactory::create(module);
+		//QPlatformInputContext *ic = QPlatformInputContextFactory::create(); // depends from QT_IM_MODULE!!
+
+		if(!ic) {
+			qDebug() << "unable to get QPlatformInputContext";
+			exit(0);
+		}
+		qDebug() << "QPlatformInputContext ic is = "<< ic;
+
+		qDebug() << "QPlatformInputContext isValid = " << ic->isValid();
+		qDebug() << "QPlatformInputContext inputMethodAccepted = " << ic->inputMethodAccepted();
+		qDebug() << "QPlatformInputContext isInputPanelVisible = "<< ic->isInputPanelVisible();
+		ic->showInputPanel();
+		//ic->setFocusObject(app.focusWindow());
+
+		//qDebug() << "QInputMethod dumpObjectInfo? = "<< im->dumpObjectInfo();
+		qDebug() << "QInputMethod objectName? = "<< im->objectName();
+		im->show();
+		im->setVisible(true);
+		qDebug() << "QInputMethod isVisible? = "<< im->isVisible();
+
+		QRectF r = im->keyboardRectangle();
+		qDebug() << QString("keyboardRectangle() = (%1,%2)").arg(r.x()).arg(r.y());
+
+		engine.rootContext()->setContextProperty("hasEmbeddedKeyboard", QVariant(true));
+
+
+		//Maliit::SettingsManager *maliit_settings;
+		//maliit_settings = Maliit::SettingsManager::create();
+		//maliit_settings->setParent(this);
+		//QObject::connect(maliit_settings, SIGNAL(pluginSettingsReceived(QList<QSharedPointer<Maliit::PluginSettings> >)),
+		//	 SLOT(pluginSettingsReceived(QList<QSharedPointer<Maliit::PluginSettings> >)));
+		//maliit_settings->loadPluginSettings();
+
+
+		engine.load(QUrl(QStringLiteral("qrc:/main.qml")));
+		return app.exec();
+	}
+}*/
+
+
+
+
+	/*qDebug() << "== Start loading MALIIT ==";
+	QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+	if (env.contains("QT_IM_MODULE"))
+	{
+		// In the Maliit code this is marked as a workaround for Lighthouse/QWS;
+		// however when embedding Maliit into the application this is required to avoid
+		// an initialization loop: creatinginput context creates the host widget, which
+		// is inputmethod-enabled and tries to create the input method
+		QString module = env.value("QT_IM_MODULE");
+		qDebug() << "Trying to load input module" << module;
+		//QInputContext *ic = QInputContextFactory::create(module, qApp);
+		QInputContext *ic =  QPlatformIntegration::inputContext();
+		if (!ic)
+			qFatal("Unable to create input context for '%s'", module.toUtf8().data());
+		qDebug() << "Created QInputContext:" << ic;
+		//qApp->setInputContext(ic);
+		app->setInputContext(ic);
+	}
+	qDebug() << "== Done loading MALIIT ==";*/
+
+
+/*
+	Maliit::SettingsManager *maliit_settings;
+	maliit_settings = Maliit::SettingsManager::create();
+	maliit_settings->setParent(this);
+
+	QObject::connect(maliit_settings, SIGNAL(pluginSettingsReceived(QList<QSharedPointer<Maliit::PluginSettings> >)),
+		this, SLOT(pluginSettingsReceived(QList<QSharedPointer<Maliit::PluginSettings> >)));
+
+	maliit_settings->loadPluginSettings();
+*/
+
+/*
+	MImServer::configureSettings(MImServer::TemporarySettings);
+	QSharedPointer<MInputContextConnection> icConnection(Maliit::DBus::createInputContextConnectionWithDynamicAddress());
+	QSharedPointer<Maliit::AbstractPlatform> platform(new Maliit::UnknownPlatform);
+	MIMPluginManager pm(icConnection, platform);
+	QPlatformIntegration *integration = QGuiApplicationPrivate::platformIntegration();
+	//integration->setInputContext(QPlatformInputContextFactory::create("maliit"));
+	engine.rootContext()->setContextProperty("hasEmbeddedKeyboard", QVariant(true));
+*/
+
+
+/*
+	MImServer::configureSettings(MImServer::TemporarySettings);
+	//QSharedPointer<MInputContextConnection> icConnection(Maliit::DBus::createInputContextConnectionWithDynamicAddress());
+	QSharedPointer<MInputContextConnection> icConnection;
+	QSharedPointer<Maliit::AbstractPlatform> platform(new Maliit::UnknownPlatform);
+	MIMPluginManager pm(icConnection, platform);
+	QPlatformIntegration *integration = QGuiApplicationPrivate::platformIntegration();
+	//integration->setInputContext(QPlatformInputContextFactory::create("maliit"));
+
+	engine.rootContext()->setContextProperty("hasEmbeddedKeyboard", QVariant(true));
+*/
+
+
+/*
+	// QT_IM_MODULE, MApplication and QtMaemo5Style all try to load
+	// MInputContext, which is fine for the application. For the passthrough
+	// server itself, we absolutely need to prevent that.
+	setenv("QT_IM_MODULE", "none", true);
+
+	//QSharedPointer<MInputContextConnection> icConnection(Maliit::DBus::createInputContextConnectionWithDynamicAddress());
+	//QSharedPointer<Maliit::AbstractPlatform> platform(new Maliit::UnknownPlatform);
+
+	QSharedPointer<MInputContextConnection> icConnection;
+	QSharedPointer<Maliit::AbstractPlatform> platform(new Maliit::UnknownPlatform);
+
+	//MInputContextConnection* icConnection = new MInputContextConnection;
+	//Maliit::AbstractPlatform* platform = new Maliit::AbstractPlatform(new Maliit::UnknownPlatform);
+
+	//MImServerCommonOptions serverCommonOptions;
+	//MImServerConnectionOptions connectionOptions;
+	//QSharedPointer<MInputContextConnection> icConnection(createConnection(connectionOptions));
+	//QSharedPointer<Maliit::AbstractPlatform> platform(createPlatform());
+	MImServer::configureSettings(MImServer::TemporarySettings);
+	MImServer imServer(icConnection, platform);
+	Q_UNUSED(imServer);
+	//MIMPluginManager pm(icConnection, platform);
+
+	//QSharedPointer<QPlatformInputContext> qpInputContext;
+	//MaliitPlatformInputContextPlugin maliitPlatformInputContextPlugin;
+	//qpInputContext = maliitPlatformInputContextPlugin.create("maliit");
+
+	//OLD
+	//QPlatformIntegration *integration = QGuiApplicationPrivate::platformIntegration();
+	//integration->setInputContext(QPlatformInputContextFactory::create("maliit"));
+
+	QPlatformInputContext *platformInputContext = integration->inputContext();
+	if(platformInputContext)
+		qDebug() << "### platformInputContext: " << platformInputContext;
+	else
+		qDebug() << "### platformInputContext: NULL";
+
+
+	//QPlatformIntegration *integration = QPlatformIntegrationFactory::create();
+	//QPlatformInputContext *m_inputContext = QPlatformInputContextFactory::create(); //"maliit"
+
+	engine.rootContext()->setContextProperty("hasEmbeddedKeyboard", QVariant(true));
+*/
+
+
+

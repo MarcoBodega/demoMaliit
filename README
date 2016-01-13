@@ -1,0 +1,17 @@
+======================
+demoMaliit
+======================
+
+A demo app with a virtual keyboard.
+
+depending of:
+CONFIG += maliit
+or
+CONFIG += mockup
+
+with CONFIG += maliit you will use the standard maliit approach with DBus, and using qt5-inputcontext
+with CONFIG += mockup you will use the following method:
+
+# http://tolszak-dev.blogspot.it/2013/04/qplatforminputcontext-and-virtual.html
+# http://quickgit.kde.org/?p=scratch%2Ftolszak%2FMockupVirtualKeyboard.git
+
